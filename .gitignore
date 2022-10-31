@@ -55,4 +55,5 @@ dkms.conf
 *.bmp
 *.png
 *.swp
+.DS_Store
 bmp_tests
