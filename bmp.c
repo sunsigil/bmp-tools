@@ -14,13 +14,13 @@
 #define DEPTH_OFFSET 28
 #define DEPTH_SIZE 2
 
-BMP_t* BMP_load(char* path)
+BMP_t* BMP_read(char* path)
 {
 	FILE* file = fopen(path, "rb");
 	
 	if(file == NULL)
 	{
-		perror("[BMP_load] Failed to open file");
+		perror("[BMP_read] Failed to open file");
 		exit(EXIT_FAILURE);
 	}
 
@@ -37,7 +37,7 @@ BMP_t* BMP_load(char* path)
 
 	if(!(bmp->file_content[0] == 'B' && bmp->file_content[1] == 'M'))
 	{
-		puts("[BMP_load] File does not have BM signature");
+		puts("[BMP_read] File does not have BM signature");
 		exit(EXIT_FAILURE);
 	}	
 
@@ -51,7 +51,7 @@ BMP_t* BMP_load(char* path)
 	
 	if(!(bmp->channels == 3 ||bmp->channels == 4))
 	{
-		puts("[BMP_load] Colours are neither RGB nor RGBA");
+		puts("[BMP_read] Colours are neither RGB nor RGBA");
 		exit(EXIT_FAILURE);
 	}
 	

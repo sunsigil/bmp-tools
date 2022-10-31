@@ -10,7 +10,7 @@ int main(int argc, char** argv)
 		exit(EXIT_FAILURE);
 	}
 
-	BMP_t* bmp = BMP_load(argv[1]);
+	BMP_t* bmp = BMP_read(argv[1]);
 	BMP_write(bmp, argv[1]);
 	BMP_dispose(bmp);
 	

@@ -25,7 +25,7 @@ typedef struct
 	color_t* pixels;
 } BMP_t;
 
-BMP_t* BMP_load(char* path);
+BMP_t* BMP_read(char* path);
 void BMP_write(BMP_t* bmp, char* path);
 void BMP_dispose(BMP_t* bmp);
 
