@@ -59,11 +59,11 @@ BMP_t* BMP_read(char* path)
 	uint32_t array_offset = (uint32_t) *(bmp->file_content + ARRAY_OFFSET_OFFSET);
 	bmp->array = bmp->file_content + array_offset;
 
-	for(int x = 0; x < bmp->width; x++)
+	for(int y = 0; y < bmp->height; y++)
 	{
-		for(int y = 0; y < bmp->height; y++)
+		for(int x = 0; x < bmp->width; x++)
 		{
-			int index = x * bmp->width + y;
+			int index = y * bmp->width + x;
 			uint8_t* array_position = bmp->array + (index * bmp->channels);
 
 			bmp->pixels[index].r = *(array_position+0);
@@ -84,7 +84,7 @@ void BMP_set_pixel(BMP_t* bmp, uint32_t x, uint32_t y, colour_t c)
 		exit(EXIT_FAILURE);
 	}
 
-	int index = x * bmp->width + y;
+	int index = y * bmp->width + x;
 	colour_t* pixels_position = bmp->pixels + index;
 	uint8_t* array_position = bmp->array + (index * bmp->channels);
 	
@@ -100,8 +100,16 @@ void BMP_set_pixel(BMP_t* bmp, uint32_t x, uint32_t y, colour_t c)
 
 colour_t BMP_get_pixel(BMP_t* bmp, uint32_t x, uint32_t y)
 {
-	colour_t c = {0,0,0,0};
-	return c;
+	if(x < 0 || x >= bmp->width || y < 0 || y >= bmp->height)
+	{
+		puts("[BMP_set_pixel] Attempted to write out-of-bounds");
+		exit(EXIT_FAILURE);
+	}
+
+	int index = y * bmp->width + x;
+	colour_t* pixels_position = bmp->pixels + index;
+	
+	return *pixels_position;	
 }
 
 void BMP_write(BMP_t* bmp, char* path)

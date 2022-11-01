@@ -22,11 +22,9 @@ int main(int argc, char** argv)
 	{
 		for(int x = 0; x < bmp->width; x++)
 		{
-			float u = (float) x / (float) bmp->width;
-			float v = (float) y / (float) bmp->height;
-
-			colour_t c = {1, (int) (u*255), (int) (v*255), 1};
-			BMP_set_pixel(bmp, x, y, c);
+			colour_t original = BMP_get_pixel(bmp, x, y);
+			colour_t inverse = {255-original.r, 255-original.g, 255-original.b, original.a};
+			BMP_set_pixel(bmp, x, y, inverse);
 		}
 	}
 
