@@ -3,16 +3,9 @@
 #include "bmp.h"
 
 #define ARRAY_OFFSET_OFFSET 10
-#define ARRAY_OFFSET_SIZE 4
-
 #define WIDTH_OFFSET 18
-#define WIDTH_SIZE 4
-
 #define HEIGHT_OFFSET 22
-#define HEIGHT_SIZE 4
-
 #define DEPTH_OFFSET 28
-#define DEPTH_SIZE 2
 
 BMP_t* BMP_read(char* path)
 {
