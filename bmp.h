@@ -10,7 +10,7 @@ typedef struct
 	uint8_t g;
 	uint8_t b;
 	uint8_t a;
-} color_t;
+} colour_t;
 
 typedef struct
 {
@@ -22,10 +22,13 @@ typedef struct
 	uint16_t depth;
 	uint16_t channels;
 	
-	color_t* pixels;
+	uint8_t* array;
+	colour_t* pixels;
 } BMP_t;
 
 BMP_t* BMP_read(char* path);
+void BMP_set_pixel(BMP_t* bmp, uint32_t x, uint32_t y, colour_t c);
+colour_t BMP_get_pixel(BMP_t* bmp, uint32_t x, uint32_t y);
 void BMP_write(BMP_t* bmp, char* path);
 void BMP_dispose(BMP_t* bmp);
 

@@ -55,25 +55,61 @@ BMP_t* BMP_read(char* path)
 		exit(EXIT_FAILURE);
 	}
 	
-	bmp->pixels = malloc(sizeof(color_t) * bmp->width * bmp->height);
+	bmp->pixels = malloc(sizeof(colour_t) * bmp->width * bmp->height);
 	uint32_t array_offset = (uint32_t) *(bmp->file_content + ARRAY_OFFSET_OFFSET);
-	uint8_t* array = bmp->file_content + array_offset;
+	bmp->array = bmp->file_content + array_offset;
 
-	for(int x = 0; x < bmp->width; x++)
+	for(int y = 0; y < bmp->height; y++)
 	{
-		for(int y = 0; y < bmp->height; y++)
+		for(int x = 0; x < bmp->width; x++)
 		{
-			int index = x * bmp->width + y;
-			uint8_t* pixel_start = array + (index * bmp->channels);
+			int index = y * bmp->width + x;
+			uint8_t* array_position = bmp->array + (index * bmp->channels);
 
-			bmp->pixels[index].r = *(pixel_start+0);
-			bmp->pixels[index].g = *(pixel_start+1);
-			bmp->pixels[index].b = *(pixel_start+2);
-			bmp->pixels[index].a = (bmp->channels == 4) ? *(pixel_start+3) : 1;
+			bmp->pixels[index].r = *(array_position+0);
+			bmp->pixels[index].g = *(array_position+1);
+			bmp->pixels[index].b = *(array_position+2);
+			bmp->pixels[index].a = (bmp->channels == 4) ? *(array_position+3) : 1;
 		}
 	}
 
 	return bmp;
+}
+
+void BMP_set_pixel(BMP_t* bmp, uint32_t x, uint32_t y, colour_t c)
+{
+	if(x < 0 || x >= bmp->width || y < 0 || y >= bmp->height)
+	{
+		puts("[BMP_set_pixel] Attempted to write out-of-bounds");
+		exit(EXIT_FAILURE);
+	}
+
+	int index = y * bmp->width + x;
+	colour_t* pixels_position = bmp->pixels + index;
+	uint8_t* array_position = bmp->array + (index * bmp->channels);
+	
+	*pixels_position = c;
+
+	*(array_position+0) = c.r;
+	*(array_position+1) = c.g;
+	*(array_position+2) = c.b;
+
+	if(bmp->channels == 4)
+	{ *(array_position+3) = c.a; }	
+}
+
+colour_t BMP_get_pixel(BMP_t* bmp, uint32_t x, uint32_t y)
+{
+	if(x < 0 || x >= bmp->width || y < 0 || y >= bmp->height)
+	{
+		puts("[BMP_set_pixel] Attempted to write out-of-bounds");
+		exit(EXIT_FAILURE);
+	}
+
+	int index = y * bmp->width + x;
+	colour_t* pixels_position = bmp->pixels + index;
+	
+	return *pixels_position;	
 }
 
 void BMP_write(BMP_t* bmp, char* path)
