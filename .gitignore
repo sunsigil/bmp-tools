@@ -51,7 +51,10 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
-# Project-Specific
+# BMP-TOOLS
 *.swp
 **/.DS_Store
-
+*.o
+*.bmp
+*.sh
+makefile
