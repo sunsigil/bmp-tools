@@ -52,9 +52,6 @@ Mkfile.old
 dkms.conf
 
 # Project-Specific
-*.bmp
-*.png
 *.swp
 **/.DS_Store
-tests/
-makefile
+
