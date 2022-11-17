@@ -10,8 +10,8 @@
 #define INFO_HEADER_OFFSET 14
 #define INFO_HEADER_SIZE 40
 
-#define SIGN_OFFSET 0
-#define SIGN_SIZE 2
+#define SIGNATURE_OFFSET 0
+#define SIGNATURE_SIZE 2
 
 #define FILE_SIZE_OFFSET 2
 #define FILE_SIZE_SIZE 4
@@ -110,7 +110,7 @@ void write_bgra(uint8_t* location, colour_t value)
 
 BMP_t* BMP_create(uint32_t width, uint32_t height, uint16_t channels)
 {
-	uint16_t sign = 0x4D42;
+	uint16_t signature = 0x4D42;
 	// uint32_t reserved = 0;
 	uint32_t array_offset = INFO_HEADER_OFFSET + INFO_HEADER_SIZE;
 
@@ -140,7 +140,7 @@ BMP_t* BMP_create(uint32_t width, uint32_t height, uint16_t channels)
 	bmp->array = bmp->file_content + array_offset;
 	bmp->pixels = calloc(width * height, sizeof(colour_t));
 	
-	write_2(bmp->file_content+SIGN_OFFSET, sign);
+	write_2(bmp->file_content+SIGNATURE_OFFSET, signature);
 	write_4(bmp->file_content+FILE_SIZE_OFFSET, file_size);
 	// write_4(bmp->file_content+RESERVED_OFFSET, reserved);
 	write_4(bmp->file_content+ARRAY_OFFSET_OFFSET, array_offset);
@@ -222,12 +222,12 @@ BMP_t* BMP_read(char* path)
 	return bmp;
 }
 
-void BMP_inspect_header(BMP_t* bmp)
+void BMP_print_header(BMP_t* bmp)
 {
 	printf
 	(
-		"[HEADER]\nSIGN: %d\nSIZE: %d\nRESERVED: %d\nARRAY OFFSET: %d\nINFO HEADER SIZE %d\nWIDTH: %d\nHEIGHT: %d\nPLANES %d\nDEPTH: %d\nCOMPRESSION: %d\nCOMPRESSED SIZE: %d\nX PPM: %d\nY PPM: %d\nCOLOURS: %d\nSIGNIFICANT COLOURS: %d\n",
-		read_2(bmp->file_content+SIGN_OFFSET),
+		"SIGNATURE: %d\nFILE SIZE: %d\nRESERVED BYTES: %d\nARRAY OFFSET: %d\nINFO HEADER SIZE: %d\nWIDTH: %d\nHEIGHT: %d\nPLANES: %d\nCOLOUR DEPTH: %d\nCOMPRESSION: %d\nCOMPRESSED SIZE: %d\nX PPM: %d\nY PPM: %d\nCOLOURS: %d\nSIGNIFICANT COLOURS: %d\n",
+		read_2(bmp->file_content+SIGNATURE_OFFSET),
 		read_4(bmp->file_content+FILE_SIZE_OFFSET),
 		read_4(bmp->file_content+RESERVED_OFFSET),
 		read_4(bmp->file_content+ARRAY_OFFSET_OFFSET),
