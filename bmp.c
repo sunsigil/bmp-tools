@@ -168,56 +168,64 @@ BMP_t* BMP_read(char* path)
 		perror("[BMP_read] Failed to open file");
 		exit(EXIT_FAILURE);
 	}
-
-	BMP_t* bmp = malloc(sizeof(BMP_t));
 	
 	fseek(file, 0, SEEK_END);
-	bmp->file_size = ftell(file);
+	uint32_t byte_count = ftell(file);
 	fseek(file, 0, SEEK_SET);
-
-	bmp->file_content = malloc(bmp->file_size);
-	fread(bmp->file_content, 1, bmp->file_size, file);
-	
+	uint8_t* bytes = malloc(byte_count);
+	fread(bytes, 1, byte_count, file);
 	fclose(file);
-
-	if(!(bmp->file_content[0] == 'B' && bmp->file_content[1] == 'M'))
-	{
-		puts("[BMP_read] File does not have BM signature");
-		exit(EXIT_FAILURE);
-	}	
-
-	uint8_t* width_location = bmp->file_content + WIDTH_OFFSET;
-	bmp->width = (uint32_t) *width_location;
-	uint8_t* height_location = bmp->file_content + HEIGHT_OFFSET;
-	bmp->height = (uint32_t) *height_location;
-	uint8_t* depth_location = bmp->file_content + DEPTH_OFFSET;
-	bmp->depth = (uint16_t) *depth_location;
-	bmp->channels = bmp->depth / 8;
 	
-	if(!(bmp->channels == 3 || bmp->channels == 4))
+	uint16_t signature = read_2(bytes+SIGNATURE_OFFSET);
+	uint32_t file_size = read_4(bytes+FILE_SIZE_OFFSET);
+	uint32_t array_offset = read_4(bytes+ARRAY_OFFSET_OFFSET);
+	uint32_t width = read_4(bytes+WIDTH_OFFSET);
+	uint32_t height = read_4(bytes+HEIGHT_OFFSET);
+	uint16_t depth = read_2(bytes+DEPTH_OFFSET);
+
+	if(signature != 0x4D42)
+	{
+		puts("[BMP_read] File does not have correct signature");
+		exit(EXIT_FAILURE);
+	}
+	
+	if(!(depth == 24 || depth == 32))
 	{
 		puts("[BMP_read] Colours are neither RGB nor RGBA");
 		exit(EXIT_FAILURE);
 	}
-	
-	bmp->pixels = malloc(sizeof(colour_t) * bmp->width * bmp->height);
-	uint32_t array_offset = (uint32_t) *(bmp->file_content + ARRAY_OFFSET_OFFSET);
-	bmp->array = bmp->file_content + array_offset;
 
-	for(int y = 0; y < bmp->height; y++)
+	int row_remainder = width % 4;
+	int row_padding = row_remainder == 0 ? 0 : 4 - row_remainder;
+	int element_size = depth/8;
+	int row_size = element_size * width + row_padding;
+	int array_size = row_size * height;
+
+	uint8_t* array = bytes+array_offset;
+	colour_t* pixels = malloc(sizeof(colour_t) * width * height);
+
+	for(int y = 0; y < height; y++)
 	{
-		for(int x = 0; x < bmp->width; x++)
+		for(int x = 0; x < width; x++)
 		{
-			int index = y * bmp->width + x;
-			uint8_t* array_position = bmp->array + (index * bmp->channels);
-
-			bmp->pixels[index].r = *(array_position+0);
-			bmp->pixels[index].g = *(array_position+1);
-			bmp->pixels[index].b = *(array_position+2);
-			if(bmp->channels == 4)
-			{ bmp->pixels[index].a = *(array_position + 3); }
+			int pixel_index = y * width + x;
+			int row_index = y * (width * element_size + row_padding);
+			int array_index = row_index + x * element_size;
+			if(element_size == 3)
+			{ pixels[pixel_index] = read_bgr(array+array_index); }
+			else
+			{ pixels[pixel_index] = read_bgra(array+array_index); }
 		}
 	}
+
+	BMP_t* bmp = malloc(sizeof(BMP_t));
+	bmp->file_size = file_size;
+	bmp->file_content = bytes;
+	bmp->width = width;
+	bmp->height = height;
+	bmp->depth = depth;
+	bmp->array = array;
+	bmp->pixels = pixels;
 
 	return bmp;
 }
