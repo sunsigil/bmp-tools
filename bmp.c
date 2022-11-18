@@ -195,11 +195,9 @@ BMP_t* BMP_read(char* path)
 		exit(EXIT_FAILURE);
 	}
 
+	int channels = depth/8;
 	int row_remainder = width % 4;
 	int row_padding = row_remainder == 0 ? 0 : 4 - row_remainder;
-	int element_size = depth/8;
-	int row_size = element_size * width + row_padding;
-	int array_size = row_size * height;
 
 	uint8_t* array = bytes+array_offset;
 	colour_t* pixels = malloc(sizeof(colour_t) * width * height);
@@ -209,9 +207,10 @@ BMP_t* BMP_read(char* path)
 		for(int x = 0; x < width; x++)
 		{
 			int pixel_index = y * width + x;
-			int row_index = y * (width * element_size + row_padding);
-			int array_index = row_index + x * element_size;
-			if(element_size == 3)
+			int row_index = y * (width * channels + row_padding);
+			int array_index = row_index + x * channels;
+
+			if(channels == 3)
 			{ pixels[pixel_index] = read_bgr(array+array_index); }
 			else
 			{ pixels[pixel_index] = read_bgra(array+array_index); }
@@ -224,6 +223,8 @@ BMP_t* BMP_read(char* path)
 	bmp->width = width;
 	bmp->height = height;
 	bmp->depth = depth;
+	bmp->channels = channels;
+	bmp->row_padding = row_padding;
 	bmp->array = array;
 	bmp->pixels = pixels;
 
@@ -261,17 +262,16 @@ void BMP_set_pixel(BMP_t* bmp, uint32_t x, uint32_t y, colour_t c)
 		exit(EXIT_FAILURE);
 	}
 
-	int index = y * bmp->width + x;
-	colour_t* pixels_position = bmp->pixels + index;
-	uint8_t* array_position = bmp->array + (index * bmp->channels);
+	int pixel_index = y * bmp->width + x;
+	int row_size = bmp->width * bmp->channels + bmp->row_padding;
+	int row_index = y * row_size;
+	int array_index = row_index + x * bmp->channels;
 	
-	*pixels_position = c;
-
-	*(array_position+0) = c.r;
-	*(array_position+1) = c.g;
-	*(array_position+2) = c.b;
-	if(bmp->channels == 4)
-	{ *(array_position+3) = c.a; }
+	bmp->pixels[pixel_index] = c;
+	if(bmp->channels == 3)
+	{ write_bgr(bmp->array+array_index, c); }
+	else
+	{ write_bgra(bmp->array+array_index, c); }
 }
 
 colour_t BMP_get_pixel(BMP_t* bmp, uint32_t x, uint32_t y)

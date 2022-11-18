@@ -20,7 +20,9 @@ typedef struct
 	uint32_t width;
 	uint32_t height;
 	uint16_t depth;
-	uint16_t channels;
+
+	int channels;
+	int row_padding;
 	
 	uint8_t* array;
 	colour_t* pixels;
