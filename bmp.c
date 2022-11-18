@@ -282,15 +282,12 @@ colour_t BMP_get_pixel(BMP_t* bmp, uint32_t x, uint32_t y)
 		exit(EXIT_FAILURE);
 	}
 
-	int index = y * bmp->width + x;
-	colour_t* pixels_position = bmp->pixels + index;
-	
-	return *pixels_position;	
+	int pixel_index = y * bmp->width + x;	
+	return *(bmp->pixels+pixel_index);
 }
 
 void BMP_write(BMP_t* bmp, char* path)
 {
-
 	FILE* file = fopen(path, "wb");
 	
 	if(file == NULL)
