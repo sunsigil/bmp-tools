@@ -54,7 +54,12 @@ dkms.conf
 # BMP-TOOLS
 *.swp
 **/.DS_Store
+
+*.out
 *.o
-*.bmp
 *.sh
+
+*.bmp
+
+test/*
 makefile
