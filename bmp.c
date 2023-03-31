@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
+#include <fcntl.h>
 #include "bmp.h"
 
 #define HEADER_OFFSET 0
@@ -132,13 +134,24 @@ BMP_t BMP_create(uint32_t width, uint32_t height, uint16_t channels)
 
 	BMP_t bmp;
 	bmp.file_size = file_size;
-	bmp.file_content = calloc(file_size, 1);
 	bmp.width = width;
 	bmp.height = height;
 	bmp.depth = depth;
 	bmp.channels = channels;
-	bmp.array = bmp.file_content + array_offset;
+
+	bmp.file_content = calloc(file_size, 1);
+	if(bmp.file_content == NULL)
+	{
+		perror("[BMP_create] calloc");
+		exit(EXIT_FAILURE);
+	}	
 	bmp.pixels = calloc(width * height, sizeof(colour_t));
+	if(bmp.pixels == NULL)
+	{
+		perror("[BMP_create] calloc");
+		exit(EXIT_FAILURE);
+	}	
+	bmp.array = bmp.file_content + array_offset;
 	
 	write_2(bmp.file_content+SIGNATURE_OFFSET, signature);
 	write_4(bmp.file_content+FILE_SIZE_OFFSET, file_size);
@@ -161,20 +174,41 @@ BMP_t BMP_create(uint32_t width, uint32_t height, uint16_t channels)
 
 BMP_t BMP_read(char* path)
 {
-	FILE* file = fopen(path, "rb");
-	
-	if(file == NULL)
+	int fd = open(path, O_RDONLY, S_IRUSR);
+	if(fd == -1)
 	{
-		perror("[BMP_read] Failed to open file");
+		perror("[BMP_read] open");
 		exit(EXIT_FAILURE);
 	}
 	
-	fseek(file, 0, SEEK_END);
-	uint32_t byte_count = ftell(file);
-	fseek(file, 0, SEEK_SET);
+	uint32_t byte_count = lseek(fd, 0, SEEK_END);
+	lseek(fd, 0, SEEK_SET);
 	uint8_t* bytes = malloc(byte_count);
-	fread(bytes, 1, byte_count, file);
-	fclose(file);
+	if(bytes == NULL)
+	{
+		perror("[BMP_read] malloc");
+		exit(EXIT_FAILURE);
+	}
+
+	int total_read = 0;
+	int last_read = 0;
+	while((last_read = read(fd, bytes+total_read, 512)) > 0)
+	{
+		total_read += last_read;
+	}
+	if(last_read == -1)
+	{
+		perror("[BMP_read] read");
+		free(bytes);
+		exit(EXIT_FAILURE);
+	}
+
+	if(close(fd) == -1)
+	{
+		perror("[BMP_read] close");
+		free(bytes);
+		exit(EXIT_FAILURE);
+	}
 	
 	uint16_t signature = read_2(bytes+SIGNATURE_OFFSET);
 	uint32_t file_size = read_4(bytes+FILE_SIZE_OFFSET);
@@ -186,12 +220,13 @@ BMP_t BMP_read(char* path)
 	if(signature != 0x4D42)
 	{
 		puts("[BMP_read] File does not have correct signature");
+		free(bytes);
 		exit(EXIT_FAILURE);
-	}
-	
+	}	
 	if(!(depth == 24 || depth == 32))
 	{
 		puts("[BMP_read] Colours are neither RGB nor RGBA");
+		free(bytes);
 		exit(EXIT_FAILURE);
 	}
 
@@ -201,6 +236,12 @@ BMP_t BMP_read(char* path)
 
 	uint8_t* array = bytes+array_offset;
 	colour_t* pixels = malloc(sizeof(colour_t) * width * height);
+	if(pixels == NULL)
+	{
+		perror("[BMP_read] malloc");
+		free(bytes);
+		exit(EXIT_FAILURE);
+	}
 
 	for(int y = 0; y < height; y++)
 	{
@@ -254,12 +295,12 @@ void BMP_print_header(BMP_t* bmp)
 	);
 }
 
-void BMP_set_pixel(BMP_t* bmp, uint32_t x, uint32_t y, colour_t c)
+int BMP_set_pixel(BMP_t* bmp, uint32_t x, uint32_t y, colour_t c)
 {
 	if(x < 0 || x >= bmp->width || y < 0 || y >= bmp->height)
 	{
 		puts("[BMP_set_pixel] Attempted to write out-of-bounds");
-		exit(EXIT_FAILURE);
+		return -1;
 	}
 
 	int pixel_index = y * bmp->width + x;
@@ -272,6 +313,8 @@ void BMP_set_pixel(BMP_t* bmp, uint32_t x, uint32_t y, colour_t c)
 	{ write_bgr(bmp->array+array_index, c); }
 	else
 	{ write_bgra(bmp->array+array_index, c); }
+
+	return 0;
 }
 
 colour_t BMP_get_pixel(BMP_t* bmp, uint32_t x, uint32_t y)
@@ -279,25 +322,48 @@ colour_t BMP_get_pixel(BMP_t* bmp, uint32_t x, uint32_t y)
 	if(x < 0 || x >= bmp->width || y < 0 || y >= bmp->height)
 	{
 		puts("[BMP_set_pixel] Attempted to write out-of-bounds");
-		exit(EXIT_FAILURE);
+		return (colour_t) {0, 0, 0, 0};
 	}
 
 	int pixel_index = y * bmp->width + x;	
 	return *(bmp->pixels+pixel_index);
 }
 
-void BMP_write(BMP_t* bmp, char* path)
+int BMP_write(BMP_t* bmp, char* path)
 {
-	FILE* file = fopen(path, "wb");
-	
-	if(file == NULL)
+	int fd = open(path, O_CREAT | O_WRONLY, S_IWUSR);	
+	if(fd == -1)
 	{
-		perror("[BMP_write] Failed to open file");
-		exit(EXIT_FAILURE);
+		perror("[BMP_write] open");
+		return -1;
 	}
 
-	fwrite(bmp->file_content, 1, bmp->file_size, file);
-	fclose(file);	
+	int last_written = 0;
+	int offset = 0;
+	int next_write = 512;
+	while(next_write > 0)
+	{
+		last_written = write(fd, bmp->file_content+offset, next_write);
+		if(last_written == -1)
+		{
+			perror("[BMP_write] write");
+			if(close(fd) == -1)
+			{ perror("[BMP_write] close"); }
+			return -1;
+		}
+
+		offset += last_written;
+		int remaining = bmp->file_size - offset;
+		next_write = (remaining >= 512) ? 512 : remaining;
+	}
+	
+	if(close(fd) == -1)
+	{
+		perror("[BMP_write] close");
+		return -1;
+	}
+
+	return 0;
 }
 
 void BMP_dispose(BMP_t* bmp)
