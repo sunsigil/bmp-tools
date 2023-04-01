@@ -331,10 +331,11 @@ colour_t BMP_get_pixel(BMP_t* bmp, uint32_t x, uint32_t y)
 
 int BMP_write(BMP_t* bmp, char* path)
 {
-	int fd = open(path, O_CREAT | O_WRONLY, S_IWUSR);	
+	int fd = open(path, O_CREAT | O_WRONLY, S_IWUSR | S_IRUSR);	
 	if(fd == -1)
 	{
 		perror("[BMP_write] open");
+		puts(path);
 		return -1;
 	}
 
