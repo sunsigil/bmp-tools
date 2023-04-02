@@ -1,61 +1,11 @@
 // This implementation assumes BITMAPFILEHEADER followed by BITMAPINFOHEADER
 
+#include "bmp.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include "bmp.h"
-
-#define HEADER_OFFSET 0
-#define HEADER_SIZE 14
-#define INFO_HEADER_OFFSET 14
-#define INFO_HEADER_SIZE 40
-
-#define SIGNATURE_OFFSET 0
-#define SIGNATURE_SIZE 2
-
-#define FILE_SIZE_OFFSET 2
-#define FILE_SIZE_SIZE 4
-
-#define RESERVED_OFFSET 6
-#define RESERVED_SIZE 4
-
-#define ARRAY_OFFSET_OFFSET 10
-#define ARRAY_OFFSET_SIZE 4
-
-#define INFO_HEADER_SIZE_OFFSET 14
-#define INFO_HEADER_SIZE_SIZE 4
-
-#define WIDTH_OFFSET 18
-#define WIDTH_SIZE 4
-
-#define HEIGHT_OFFSET 22
-#define HEIGHT_SIZE 4
-
-#define PLANES_OFFSET 26
-#define PLANES_SIZE 2
-
-#define DEPTH_OFFSET 28
-#define DEPTH_SIZE 2
-
-#define COMPRESSION_OFFSET 30
-#define COMPRESSION_SIZE 4
-
-#define COMPRESSED_SIZE_OFFSET 34
-#define COMPRESSED_SIZE_SIZE 4
-
-#define X_PPM_OFFSET 38
-#define X_PPM_SIZE 4
-
-#define Y_PPM_OFFSET 42
-#define Y_PPM_SIZE 4
-
-#define COLOURS_OFFSET 46
-#define COLOURS_SIZE 4
-
-#define SIGNIFICANT_COLOURS_OFFSET 50
-#define SIGNIFICANT_COLOURS_SIZE 4
 
 uint16_t read_2(uint8_t* location)
 {
