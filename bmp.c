@@ -132,7 +132,7 @@ BMP_t BMP_create(uint32_t width, uint32_t height, uint16_t channels)
 	// uint32_t colours = (channels == 4) ? 0xFFFFFFFF : 0xFFFFFF ;
 	// uint_t significant_colours = 0;	
 
-	BMP_t bmp;
+	BMP_t bmp = {};
 	bmp.file_size = file_size;
 	bmp.width = width;
 	bmp.height = height;
@@ -258,7 +258,7 @@ BMP_t BMP_read(char* path)
 		}
 	}
 
-	BMP_t bmp;
+	BMP_t bmp = {};
 	bmp.file_size = file_size;
 	bmp.file_content = bytes;
 	bmp.width = width;
@@ -276,7 +276,11 @@ void BMP_print_header(BMP_t* bmp)
 {
 	printf
 	(
-		"SIGNATURE: %d\nFILE SIZE: %d\nRESERVED BYTES: %d\nARRAY OFFSET: %d\nINFO HEADER SIZE: %d\nWIDTH: %d\nHEIGHT: %d\nPLANES: %d\nCOLOUR DEPTH: %d\nCOMPRESSION: %d\nCOMPRESSED SIZE: %d\nX PPM: %d\nY PPM: %d\nCOLOURS: %d\nSIGNIFICANT COLOURS: %d\n",
+		"SIGNATURE: %d\nFILE SIZE: %d\nRESERVED BYTES: %d\n"
+		"ARRAY OFFSET: %d\nINFO HEADER SIZE: %d\nWIDTH: %d\n"
+		"HEIGHT: %d\nPLANES: %d\nCOLOUR DEPTH: %d\n"
+		"COMPRESSION: %d\nCOMPRESSED SIZE: %d\nX PPM: %d\n"
+		"Y PPM: %d\nCOLOURS: %d\nSIGNIFICANT COLOURS: %d\n",
 		read_2(bmp->file_content+SIGNATURE_OFFSET),
 		read_4(bmp->file_content+FILE_SIZE_OFFSET),
 		read_4(bmp->file_content+RESERVED_OFFSET),
@@ -335,7 +339,6 @@ int BMP_write(BMP_t* bmp, char* path)
 	if(fd == -1)
 	{
 		perror("[BMP_write] open");
-		puts(path);
 		return -1;
 	}
 
