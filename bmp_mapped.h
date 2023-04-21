@@ -8,7 +8,6 @@ typedef struct BMP_mapped
 	char* path;
 	int fd;
 	BMP_t bmp;
-
 } BMP_mapped_t;
 
 BMP_mapped_t BMPM_map(char* path);

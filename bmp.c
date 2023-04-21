@@ -139,20 +139,12 @@ BMP_t BMP_read(char* path)
 		perror("[BMP_read] malloc");
 		exit(EXIT_FAILURE);
 	}
-
-	int total_read = 0;
-	int last_read = 0;
-	while((last_read = read(fd, bytes+total_read, 512)) > 0)
-	{
-		total_read += last_read;
-	}
-	if(last_read == -1)
+	if(read(fd, bytes, byte_count) < byte_count)
 	{
 		perror("[BMP_read] read");
 		free(bytes);
 		exit(EXIT_FAILURE);
 	}
-
 	if(close(fd) == -1)
 	{
 		perror("[BMP_read] close");
@@ -291,26 +283,13 @@ int BMP_write(BMP_t* bmp, char* path)
 		perror("[BMP_write] open");
 		return -1;
 	}
-
-	int last_written = 0;
-	int offset = 0;
-	int next_write = 512;
-	while(next_write > 0)
+	if(write(fd, bmp->file_content, bmp->file_size) < bmp->file_size)
 	{
-		last_written = write(fd, bmp->file_content+offset, next_write);
-		if(last_written == -1)
-		{
-			perror("[BMP_write] write");
-			if(close(fd) == -1)
-			{ perror("[BMP_write] close"); }
-			return -1;
-		}
-
-		offset += last_written;
-		int remaining = bmp->file_size - offset;
-		next_write = (remaining >= 512) ? 512 : remaining;
+		perror("[BMP_write] write");
+		if(close(fd) == -1)
+		{ perror("[BMP_write] close"); }
+		return -1;
 	}
-	
 	if(close(fd) == -1)
 	{
 		perror("[BMP_write] close");
