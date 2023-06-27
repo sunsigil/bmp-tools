@@ -267,7 +267,7 @@ colour_t BMP_get_pixel(BMP_t* bmp, uint32_t x, uint32_t y)
 {
 	if(x < 0 || x >= bmp->width || y < 0 || y >= bmp->height)
 	{
-		puts("[BMP_set_pixel] Attempted to write out-of-bounds");
+		puts("[BMP_get_pixel] Attempted to read out-of-bounds");
 		return (colour_t) {0, 0, 0, 0};
 	}
 

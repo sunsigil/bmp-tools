@@ -6,7 +6,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-BMP_mapped_t BMPM_map(char* path)
+BMP_t BMPM_map(char* path)
 {
 	int fd = open(path, O_RDONLY, S_IRUSR);
 	if(fd == -1)
@@ -23,6 +23,12 @@ BMP_mapped_t BMPM_map(char* path)
 		perror("[BMP_map] mmap");
 		exit(EXIT_FAILURE);
 	}
+	if(close(fd) == -1)
+	{
+		perror("[BMPM_map] close");
+		exit(EXIT_FAILURE);
+	}
+
 
 	uint16_t signature = read_2(bytes+SIGNATURE_OFFSET);
 	uint32_t file_size = read_4(bytes+FILE_SIZE_OFFSET);
@@ -54,39 +60,31 @@ BMP_mapped_t BMPM_map(char* path)
 	bmp.row_padding = (width % 4 == 0) ? 0 : 4 - (width % 4);
 	bmp.array = bytes + array_offset;
 	bmp.pixels = NULL;
-	BMP_mapped_t bmpm = {};
-	bmpm.path = path;
-	bmpm.fd = fd;
-	bmpm.bmp = bmp;
 
-	return bmpm;
+	return bmp;
 }
 
-colour_t BMPM_get_pixel(BMP_mapped_t* bmpm, int x, int y)
+colour_t BMPM_get_pixel(BMP_t* bmp, int x, int y)
 {
-	int width = bmpm->bmp.width;
-	int channels = bmpm->bmp.channels;
-	int row_padding = bmpm->bmp.row_padding;
+	int width = bmp->width;
+	int channels = bmp->channels;
+	int row_padding = bmp->row_padding;
 	
 	int row_index = y * (width * channels + row_padding);
 	int array_index = row_index + x * channels;
 
 	if(channels == 3)
-	{ return read_bgr(bmpm->bmp.array + array_index); }
-	return read_bgra(bmpm->bmp.array + array_index);
+	{ return read_bgr(bmp->array + array_index); }
+	return read_bgra(bmp->array + array_index);
 }
 
-int BMPM_unmap(BMP_mapped_t* bmpm)
+int BMPM_unmap(BMP_t* bmp)
 {
-	if(munmap(bmpm->bmp.file_content, bmpm->bmp.file_size) == -1)
+	if(munmap(bmp->file_content, bmp->file_size) == -1)
 	{
 		perror("[BMPM_unmap] munmap");
 		exit(EXIT_FAILURE);
 	}
-	if(close(bmpm->fd) == -1)
-	{
-		perror("[BMPM_unmap] close");
-		exit(EXIT_FAILURE);
-	}
+
 	return 0;
 }
