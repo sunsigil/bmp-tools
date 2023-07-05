@@ -173,8 +173,7 @@ BMP_t BMP_read(char* path)
 	}
 
 	int channels = depth/8;
-	int row_remainder = width % 4;
-	int row_padding = row_remainder == 0 ? 0 : 4 - row_remainder;
+	int row_padding = (width * depth) % 4;
 
 	uint8_t* array = bytes+array_offset;
 	colour_t* pixels = malloc(sizeof(colour_t) * width * height);
@@ -238,6 +237,13 @@ void BMP_print_header(BMP_t* bmp)
 		read_4(bmp->file_content+Y_PPM_OFFSET),
 		read_4(bmp->file_content+COLOURS_OFFSET),
 		read_4(bmp->file_content+SIGNIFICANT_COLOURS_OFFSET)
+	);
+
+	printf
+	(
+	 	"___\nCHANNELS: %d\nROW PADDING: %d\n",
+		bmp->channels,
+		bmp->row_padding
 	);
 }
 
