@@ -60,26 +60,26 @@ void write_bgra(uint8_t* location, colour_t value)
 	location[3] = value.a;
 }
 
-BMP_t BMP_create(uint32_t width, uint32_t height, uint16_t channels)
+BMP_t BMP_create(uint32_t width, uint32_t height, int has_alpha)
 {
 	uint16_t signature = 0x4D42;
 	// uint32_t reserved = 0;
 	uint32_t array_offset = INFO_HEADER_OFFSET + INFO_HEADER_SIZE;
+	
+	uint16_t planes = 1;
+	uint16_t depth = 8 * (has_alpha ? 4 : 3);
 
-	int row_padding = (width % 4 == 0) ? 0 : (4 - width % 4);
-	int row_size = channels * width + row_padding;
+	size_t row_size = ((depth * width + 31) / 32) * 4;
 	uint32_t array_size = row_size * height;
 	
 	uint32_t file_size = HEADER_SIZE + INFO_HEADER_SIZE + array_size;
 	uint32_t info_header_size = INFO_HEADER_SIZE;
-	
-	uint16_t planes = 1;
-	uint16_t depth = 8 * channels;
+
 	// uint32_t compression = 0;
 	// uint32_t compressed_size = 0;
 	// uint32_t x_ppm = width;
 	// uint32_t y_ppm = height;
-	// uint32_t colours = (channels == 4) ? 0xFFFFFFFF : 0xFFFFFF ;
+	// uint32_t colours = has_alpha ? 0xFFFFFFFF : 0xFFFFFF ;
 	// uint_t significant_colours = 0;	
 
 	BMP_t bmp = {};
@@ -87,7 +87,6 @@ BMP_t BMP_create(uint32_t width, uint32_t height, uint16_t channels)
 	bmp.width = width;
 	bmp.height = height;
 	bmp.depth = depth;
-	bmp.channels = channels;
 
 	bmp.file_content = calloc(file_size, 1);
 	if(bmp.file_content == NULL)
@@ -172,9 +171,6 @@ BMP_t BMP_read(char* path)
 		exit(EXIT_FAILURE);
 	}
 
-	int channels = depth/8;
-	int row_padding = (width * depth) % 4;
-
 	uint8_t* array = bytes+array_offset;
 	colour_t* pixels = malloc(sizeof(colour_t) * width * height);
 	if(pixels == NULL)
@@ -184,15 +180,16 @@ BMP_t BMP_read(char* path)
 		exit(EXIT_FAILURE);
 	}
 
+	size_t pixel_size = depth/8;
+	size_t row_size = ((depth * width + 31) / 32) * 4;
 	for(int y = 0; y < height; y++)
 	{
 		for(int x = 0; x < width; x++)
 		{
 			int pixel_index = y * width + x;
-			int row_index = y * (width * channels + row_padding);
-			int array_index = row_index + x * channels;
+			int array_index = y * row_size + x * pixel_size;
 
-			if(channels == 3)
+			if(pixel_size == 3)
 			{ pixels[pixel_index] = read_bgr(array+array_index); }
 			else
 			{ pixels[pixel_index] = read_bgra(array+array_index); }
@@ -205,8 +202,6 @@ BMP_t BMP_read(char* path)
 	bmp.width = width;
 	bmp.height = height;
 	bmp.depth = depth;
-	bmp.channels = channels;
-	bmp.row_padding = row_padding;
 	bmp.array = array;
 	bmp.pixels = pixels;
 
@@ -238,13 +233,6 @@ void BMP_print_header(BMP_t* bmp)
 		read_4(bmp->file_content+COLOURS_OFFSET),
 		read_4(bmp->file_content+SIGNIFICANT_COLOURS_OFFSET)
 	);
-
-	printf
-	(
-	 	"___\nCHANNELS: %d\nROW PADDING: %d\n",
-		bmp->channels,
-		bmp->row_padding
-	);
 }
 
 int BMP_set_pixel(BMP_t* bmp, uint32_t x, uint32_t y, colour_t c)
@@ -255,13 +243,14 @@ int BMP_set_pixel(BMP_t* bmp, uint32_t x, uint32_t y, colour_t c)
 		return -1;
 	}
 
+	size_t pixel_size = bmp->depth/8;
+	size_t row_size = ((bmp->depth * bmp->width + 31) / 32) * 4;
+
 	int pixel_index = y * bmp->width + x;
-	int row_size = bmp->width * bmp->channels + bmp->row_padding;
-	int row_index = y * row_size;
-	int array_index = row_index + x * bmp->channels;
+	int array_index = y * row_size + x * pixel_size;
 	
 	bmp->pixels[pixel_index] = c;
-	if(bmp->channels == 3)
+	if(pixel_size == 3)
 	{ write_bgr(bmp->array+array_index, c); }
 	else
 	{ write_bgra(bmp->array+array_index, c); }

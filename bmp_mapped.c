@@ -29,7 +29,6 @@ BMP_t BMPM_map(char* path)
 		exit(EXIT_FAILURE);
 	}
 
-
 	uint16_t signature = read_2(bytes+SIGNATURE_OFFSET);
 	uint32_t file_size = read_4(bytes+FILE_SIZE_OFFSET);
 	uint32_t array_offset = read_4(bytes+ARRAY_OFFSET_OFFSET);
@@ -56,8 +55,6 @@ BMP_t BMPM_map(char* path)
 	bmp.width = width;
 	bmp.height = height;
 	bmp.depth = depth;
-	bmp.channels = depth/8;
-	bmp.row_padding = (width % 4 == 0) ? 0 : 4 - (width % 4);
 	bmp.array = bytes + array_offset;
 	bmp.pixels = NULL;
 
@@ -66,16 +63,20 @@ BMP_t BMPM_map(char* path)
 
 colour_t BMPM_get_pixel(BMP_t* bmp, int x, int y)
 {
-	int width = bmp->width;
-	int channels = bmp->channels;
-	int row_padding = bmp->row_padding;
-	
-	int row_index = y * (width * channels + row_padding);
-	int array_index = row_index + x * channels;
+	if(x < 0 || x >= bmp->width || y < 0 || y >= bmp->height)
+	{
+		puts("[BMPM_get_pixel] Attempted to read out-of-bounds");
+		return (colour_t) {0, 0, 0, 0};
+	}
 
-	if(channels == 3)
-	{ return read_bgr(bmp->array + array_index); }
-	return read_bgra(bmp->array + array_index);
+	size_t pixel_size = bmp->depth/8;
+	size_t row_size = ((bmp->depth * bmp->width + 31) / 32) * 4;
+
+	int array_index = y * row_size + x * pixel_size;
+
+	if(pixel_size == 3)
+	{ return read_bgr(bmp->array+array_index); }
+	return read_bgra(bmp->array+array_index);
 }
 
 int BMPM_unmap(BMP_t* bmp)
